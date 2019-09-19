@@ -38,7 +38,7 @@ class PerceptronPredictor : public PredictorImpl<int> {
   PerceptronPredictor();
   string get_name() const override {
     int budget = (kSize + 1) * kHistorySize * kWeightSize + kHistorySize;
-    return "Perceptron branch predictor (" + std::to_string(budget) + " b)";
+    return "Perceptron branch predictor (" + bp::to_string(budget) + " b)";
   }
 
  private:

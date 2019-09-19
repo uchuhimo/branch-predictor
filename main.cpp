@@ -27,8 +27,9 @@
 ostream *out = &cerr;
 // Contains all the predictors that should be used when instrumentating a
 // program with this Pin tool.
-vector<bp::Predictor*> bps =
-  {new bp::TwoBitSaturatingCounterPredictor(), new bp::PerceptronPredictor()};
+static const bp::Predictor* arr[] = {new bp::TwoBitSaturatingCounterPredictor(), new bp::PerceptronPredictor()};
+// vector<bp::Predictor*> bps = {new bp::TwoBitSaturatingCounterPredictor(), new bp::PerceptronPredictor()};
+vector<bp::Predictor *> bps(arr, arr + sizeof(arr) / sizeof(arr[0]));
 
 // Runs the branch at the given address through each of the branch predictors
 // with whether the branch was taken and its instruction mnemonic.

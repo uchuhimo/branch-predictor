@@ -6,10 +6,20 @@
 #include <pin.H>
 
 #include <ostream>
+#include <sstream>
 #include <map>
 #include <string>
+using namespace std;
 
 namespace bp {
+
+template <typename T>
+std::string to_string(T val)
+{
+  std::stringstream stream;
+  stream << val;
+  return stream.str();
+}
 
 // Abstract class that provides a high-level interface for branch prediction.
 class Predictor {
