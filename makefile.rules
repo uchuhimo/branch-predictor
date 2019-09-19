@@ -8,6 +8,10 @@ OBJECT_ROOTS :=
 DLL_ROOTS :=
 LIB_ROOTS :=
 
+COMPILER := gcc
+CXX := g++
+# COMPILER := clang
+# CXX := clang++
 TOOL_CXXFLAGS += -std=c++11 -I.
 TOOL_OBJECTS = \
 	$(OBJDIR)main$(OBJ_SUFFIX) \
