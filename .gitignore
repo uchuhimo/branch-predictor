@@ -31,3 +31,5 @@
 *.swp
 *~
 .vscode
+*.log
+obj-intel64

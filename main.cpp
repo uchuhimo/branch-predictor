@@ -27,45 +27,72 @@
 ostream *out = &cerr;
 // Contains all the predictors that should be used when instrumentating a
 // program with this Pin tool.
-static const bp::Predictor* arr[] = {new bp::TwoBitSaturatingCounterPredictor(), new bp::PerceptronPredictor()};
+static const bp::Predictor *arr[] = {new bp::TwoBitSaturatingCounterPredictor(), new bp::PerceptronPredictor()};
 // vector<bp::Predictor*> bps = {new bp::TwoBitSaturatingCounterPredictor(), new bp::PerceptronPredictor()};
 vector<bp::Predictor *> bps(arr, arr + sizeof(arr) / sizeof(arr[0]));
 
 // Runs the branch at the given address through each of the branch predictors
 // with whether the branch was taken and its instruction mnemonic.
-void ProcessBranch(ADDRINT pc, bool brTaken, void *arg) {
+void ProcessBranch(ADDRINT pc, bool brTaken, void *arg)
+{
   string *mnemonic = reinterpret_cast<string *>(arg);
-  for (bp::Predictor *bp : bps) {
+  for (bp::Predictor *bp : bps)
+  {
     bp->GetPredictionAndUpdate(pc, brTaken, mnemonic);
   }
 }
 
 // Installs a call on conditional branches that then calls through to our
 // branch predictors.
-void InstrumentInstruction(INS ins, void *v) {
-  if (INS_IsBranch(ins) && INS_HasFallThrough(ins)) {
+void InstrumentInstruction(INS ins, void *v)
+{
+  if (INS_IsControlFlow(ins) && INS_IsBranch(ins) && INS_HasFallThrough(ins) && !(INS_Opcode(ins) == XED_ICLASS_XBEGIN) && !(INS_Opcode(ins) == XED_ICLASS_XEND))
+  {
     string *mnemonic = new string(INS_Mnemonic(ins));
-    INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR) ProcessBranch,
-        IARG_INST_PTR, IARG_BRANCH_TAKEN, IARG_PTR, mnemonic, IARG_END);
+    INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)ProcessBranch,
+                   IARG_INST_PTR, IARG_BRANCH_TAKEN, IARG_PTR, mnemonic, IARG_END);
+  }
+}
+
+void Trace(TRACE trace, void *v)
+{
+  for (BBL bbl = TRACE_BblHead(trace); BBL_Valid(bbl); bbl = BBL_Next(bbl))
+  {
+    for (INS ins = BBL_InsHead(bbl); INS_Valid(ins); ins = INS_Next(ins))
+    {
+      if (INS_IsControlFlow(ins) && INS_IsBranch(ins) && INS_HasFallThrough(ins) && !(INS_Opcode(ins) == XED_ICLASS_XBEGIN) && !(INS_Opcode(ins) == XED_ICLASS_XEND))
+      {
+        string *mnemonic = new string(INS_Mnemonic(ins));
+        INS_InsertCall(ins, IPOINT_BEFORE, (AFUNPTR)ProcessBranch,
+                       IARG_INST_PTR, IARG_BRANCH_TAKEN, IARG_PTR, mnemonic, IARG_END);
+      }
+    }
   }
 }
 
 // Once the program has terminated, prints out all the branch predictor results
 // and statistics.
-void Finished(int code, void *v) {
-  *out << endl << "Done! Results:" << endl << endl;
-  for (bp::Predictor *bp : bps) {
+void Finished(int code, void *v)
+{
+  *out << endl
+       << "Done! Results:" << endl
+       << endl;
+  for (bp::Predictor *bp : bps)
+  {
     bp->PrintStatistics(out);
   }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
   PIN_Init(argc, argv);
-  INS_AddInstrumentFunction(InstrumentInstruction, 0);
+  // INS_AddInstrumentFunction(InstrumentInstruction, 0);
+  TRACE_AddInstrumentFunction(Trace, 0);
   PIN_AddFiniFunction(Finished, 0);
 
   *out << "Running with the following branch predictor(s):" << endl;
-  for (bp::Predictor *bp : bps) {
+  for (bp::Predictor *bp : bps)
+  {
     *out << "  " << bp->get_name() << endl;
     // Due to the way Pin manages memory, we don't explicitly delete the branch
     // predictors here. For this reason, we also do not use unique_ptr in our
